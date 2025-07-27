@@ -1,0 +1,89 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Messaging App</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    .message { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Simple Messaging App</h2>
+  <label>Username: <input id="username" /></label>
+  <div id="messages"></div>
+
+  <form id="messageForm">
+    <input type="text" id="text" placeholder="Enter message" required />
+    <input type="file" id="file" />
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const usernameInput = document.getElementById("username");
+    const messagesDiv = document.getElementById("messages");
+    const messageForm = document.getElementById("messageForm");
+    const textInput = document.getElementById("text");
+    const fileInput = document.getElementById("file");
+
+    const socket = new WebSocket("ws://localhost:3000");
+
+    socket.addEventListener("message", event => {
+      const msg = JSON.parse(event.data);
+      const el = document.createElement("div");
+      el.className = "message";
+      el.innerHTML = `<strong>${msg.username}:</strong> ${msg.text || ''}`;
+      if (msg.fileUrl) {
+        const fileLink = document.createElement("a");
+        fileLink.href = msg.fileUrl;
+        fileLink.textContent = ` [File]`;
+        fileLink.target = "_blank";
+        el.appendChild(fileLink);
+      }
+      messagesDiv.appendChild(el);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    messageForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = usernameInput.value.trim();
+      const text = textInput.value.trim();
+      const file = fileInput.files[0];
+
+      const formData = new FormData();
+      formData.append("username", username);
+      formData.append("text", text);
+      if (file) formData.append("file", file);
+
+      await fetch("/message", {
+        method: "POST",
+        body: formData
+      });
+
+      textInput.value = "";
+      fileInput.value = null;
+    });
+
+    fetch("/messages")
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(msg => {
+          const el = document.createElement("div");
+          el.className = "message";
+          el.innerHTML = `<strong>${msg.username}:</strong> ${msg.text || ''}`;
+          if (msg.fileUrl) {
+            const fileLink = document.createElement("a");
+            fileLink.href = msg.fileUrl;
+            fileLink.textContent = ` [File]`;
+            fileLink.target = "_blank";
+            el.appendChild(fileLink);
+          }
+          messagesDiv.appendChild(el);
+        });
+      });
+  </script>
+</body>
+</html>
