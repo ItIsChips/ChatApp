@@ -29,7 +29,7 @@
     const textInput = document.getElementById("text");
     const fileInput = document.getElementById("file");
 
-    const socket = new WebSocket("ws://localhost:3000");
+    const socket = new WebSocket("ws://chatapp-shu0.onrender.com:3000");
 
     socket.addEventListener("message", event => {
       const msg = JSON.parse(event.data);
